@@ -1,3 +1,6 @@
+# usage: ./highways_intersect_buildings.sh <export> <drop>
+# `export` and `drop` are optional
+
 echo "
     CREATE TABLE _tmp_buildings AS
         SELECT id, tags, linestring as geom
@@ -24,6 +27,8 @@ echo "
     ON _tmp_highways USING GIST(geom);
 " | psql -U postgres -d osm
 
+# the actual highways and buildings that intersect
+# hwy, bldg
 echo "
     CREATE TABLE highway_intersects_building AS
         SELECT hwy.id as hwy, bldg.id as bldg
@@ -31,6 +36,7 @@ echo "
         WHERE st_intersects(hwy.geom, bldg.geom);
 " | psql -U postgres -d osm
 
+# drop temp tables
 echo "
     DROP TABLE _tmp_buildings;
     DROP TABLE _tmp_highways;
