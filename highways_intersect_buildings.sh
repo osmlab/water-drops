@@ -30,3 +30,24 @@ echo "
         FROM _tmp_highways as hwy, _tmp_buildings as bldg
         WHERE st_intersects(hwy.geom, bldg.geom);
 " | psql -U postgres -d osm
+
+echo "
+    DROP TABLE _tmp_buildings;
+    DROP TABLE _tmp_highways;
+" | psql -U postgres -d osm
+
+if [ ! -x $1 ] && [ $1 == 'export' ]; then
+    echo "
+        COPY (select hwy, bldg from highway_intersects_building) to stdout DELIMITER ',' HEADER CSV;
+    " | psql -U postgres -d osm > highway_intersects_building.csv
+
+    echo "EXPORTED: highway_intersects_building.csv"
+fi
+
+if [ ! -x $2 ] && [ $2 == 'drop' ]; then
+    echo "
+        DROP TABLE highway_intersects_building;
+    " | psql -U postgres -d osm
+
+    echo "DROPPED: highway_intersects_building"
+fi
