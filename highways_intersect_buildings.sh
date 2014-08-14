@@ -54,7 +54,7 @@ echo "
             hwy.id as hwy,
             bldg.id as bldg
         FROM _tmp_highways as hwy, _tmp_buildings as bldg
-        WHERE GeometryType(st_astext(st_intersection(hwy.geom, bldg.geom))) = 'LINESTRING';
+        WHERE GeometryType(st_intersection(hwy.geom, bldg.geom)) = 'LINESTRING';
 " | psql -U postgres -d osm
 
 # drop temp tables
