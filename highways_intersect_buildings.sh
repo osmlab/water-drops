@@ -3,10 +3,15 @@
 
 echo "
     CREATE TABLE _tmp_buildings AS
-        SELECT id, tags, linestring as geom
+        SELECT id, tags, ST_makepolygon(linestring) as geom
         FROM ways
-        WHERE tags ? 'building'
-        AND NOT 'building=>no'::hstore <@ tags;
+        WHERE ST_npoints(linestring) > 3
+        AND ST_IsClosed(linestring)
+        AND tags ? 'building'
+        AND NOT tags ? 'layer'
+        AND NOT tags ? 'bridge'
+        AND NOT 'building=>no'::hstore <@ tags
+        AND NOT 'building=>roof'::hstore <@ tags;
 " | psql -U postgres -d osm
 
 echo "
@@ -14,6 +19,11 @@ echo "
     ON _tmp_buildings USING GIST(geom);
 " | psql -U postgres -d osm
 
+echo "
+    DELETE from _tmp_buildings where st_isvalid(geom) = 'f';
+" | psql -U postgres -d osm
+
+# remove some obvious and non-obvious ways that are often attacked to buildings
 echo "
     CREATE TABLE _tmp_highways AS
         SELECT id, linestring as geom
@@ -26,7 +36,10 @@ echo "
         AND NOT 'highway=>path'::hstore <@ tags
         AND NOT 'highway=>steps'::hstore <@ tags
         AND NOT 'highway=>living_street'::hstore <@ tags
-        AND NOT 'highway=>pedestrian'::hstore <@ tags;
+        AND NOT 'highway=>pedestrian'::hstore <@ tags
+        AND NOT 'highway=>construction'::hstore <@ tags
+        AND NOT 'service=>driveway'::hstore <@ tags
+        AND NOT 'service=>parking_aisle'::hstore <@ tags;
 " | psql -U postgres -d osm
 
 echo "
@@ -35,12 +48,13 @@ echo "
 " | psql -U postgres -d osm
 
 # the actual highways and buildings that intersect
-# hwy, bldg
 echo "
     CREATE TABLE highway_intersects_building AS
-        SELECT hwy.id as hwy, bldg.id as bldg
+        SELECT
+            hwy.id as hwy,
+            bldg.id as bldg
         FROM _tmp_highways as hwy, _tmp_buildings as bldg
-        WHERE st_intersects(hwy.geom, bldg.geom);
+        WHERE GeometryType(st_astext(st_intersection(hwy.geom, bldg.geom))) = 'LINESTRING';
 " | psql -U postgres -d osm
 
 # drop temp tables
@@ -51,7 +65,7 @@ echo "
 
 if [ ! -x $1 ] && [ $1 == 'export' ]; then
     echo "
-        COPY (select hwy, bldg from highway_intersects_building) to stdout DELIMITER ',' HEADER CSV;
+        COPY (select * from highway_intersects_building) to stdout DELIMITER ',' HEADER CSV;
     " | psql -U postgres -d osm > highway_intersects_building.csv
 
     echo "EXPORTED: highway_intersects_building.csv"
