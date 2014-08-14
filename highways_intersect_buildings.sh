@@ -6,7 +6,7 @@ echo "
         SELECT id, tags, linestring as geom
         FROM ways
         WHERE tags ? 'building'
-        AND NOT '\"building\"=>\"no\"'::hstore <@ tags;
+        AND NOT 'building=>no'::hstore <@ tags;
 " | psql -U postgres -d osm
 
 echo "
@@ -22,11 +22,11 @@ echo "
         AND NOT tags ? 'layer'
         AND NOT tags ? 'tunnel'
         AND NOT tags ? 'area'
-        AND NOT '\"highway\"=>\"footway\"'::hstore <@ tags
-        AND NOT '\"highway\"=>\"path\"'::hstore <@ tags
-        AND NOT '\"highway\"=>\"steps\"'::hstore <@ tags
-        AND NOT '\"highway\"=>\"living_street\"'::hstore <@ tags
-        AND NOT '\"highway\"=>\"pedestrian\"'::hstore <@ tags;
+        AND NOT 'highway=>footway'::hstore <@ tags
+        AND NOT 'highway=>path'::hstore <@ tags
+        AND NOT 'highway=>steps'::hstore <@ tags
+        AND NOT 'highway=>living_street'::hstore <@ tags
+        AND NOT 'highway=>pedestrian'::hstore <@ tags;
 " | psql -U postgres -d osm
 
 echo "
