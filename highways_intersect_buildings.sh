@@ -42,7 +42,7 @@ echo "
 # the actual highways and buildings that intersect
 echo "
     CREATE TABLE highway_intersects_building AS
-        SELECT
+        SELECT distinct on (bldg)
             hwy.id as hwy,
             bldg.id as bldg
         FROM _tmp_highways as hwy, _tmp_buildings as bldg
